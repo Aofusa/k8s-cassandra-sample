@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sample-cassandra
+  labels:
+    app: sample-cassandra
+spec:
+  serviceName: sample-cassandra
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sample-cassandra
+  template:
+    metadata:
+      labels:
+        app: sample-cassandra
+    spec:
+      containers:
+      - name: sample-cassandra
+        image: cassandra:3
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        resources:
+          limits:
+            cpu: "500m"
+            memory: 4Gi
+        env:
+          - name: CASSANDRA_SEEDS
+            value: "sample-cassandra-0.sample-cassandra.default.svc.cluster.local"
+        volumeMounts:
+        - name: sample-cassandra-data
+          mountPath: /var/lib/cassandra
+      volumes:
+      - name: sample-cassandra-data
+        emptyDir: {}
+        # persistentVolumeClaim:
+        #     claimName: sample-pv-claim
+
+# ---
+
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: sample-pv-claim
+# spec:
+#   storageClassName: manual
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Gi
+
+# ---
+
+# kind: PersistentVolume
+# apiVersion: v1
+# metadata:
+#   name: sample-pv
+#   labels:
+#     type: local
+# spec:
+#   storageClassName: manual
+#   capacity:
+#     storage: 10Gi
+#   accessModes:
+#     - ReadWriteOnce
+#   local:
+#     path: /mnt/c/data
+#   nodeAffinity:
+#     required:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: kubernetes.io/hostname
+#           operator: Exists
